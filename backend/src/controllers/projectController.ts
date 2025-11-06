@@ -23,14 +23,12 @@ export const createProject = async (req: Request, res: Response) => {
                 message: `"${organizationName}" est introuvable sur GitHub.`
             });
         }
-
-        // Trouve prochain numéro de groupe libre
         const groupNumbers = existingRepos
-            .map((repo) => {
+            .map((repo: any) => {
                 const m = repo.name.match(/^Groupe(\d+)$/i);
                 return m ? parseInt(m[1], 10) : null;
             })
-            .filter((n) => n !== null);
+            .filter((n: number | null): n is number => n !== null);
 
         const nextGroupNumber = groupNumbers.length ? Math.max(...groupNumbers) + 1 : 1;
         const groupName = `Groupe${nextGroupNumber.toString().padStart(2, "0")}`;
@@ -52,7 +50,7 @@ export const createProject = async (req: Request, res: Response) => {
             professorId,
             urlToken: generateUrlToken(),
             repoUrl,
-            color, // Pour le changement de couleur
+            color,
         });
 
         res.status(201).json(project);
@@ -68,7 +66,7 @@ export const getMyProjects = async (req: Request, res: Response) => {
         const projects = await Project.find({ professorId }).sort({ createdAt: -1 });
 
         res.json(
-            projects.map((p) => ({
+            projects.map((p: any) => ({
                 ...p.toObject(),
                 studentCount: p.students?.length || 0,
             }))
@@ -109,10 +107,9 @@ export const updateProject = async (req: Request, res: Response) => {
         res.json({ message: "Projet MAJ avec succès", project });
     } catch (err: any) {
         console.error("Erreur MAJ projet :", err.message);
-        res.status(500).json({ message: "Erreur/ modification projet" });
+        res.status(500).json({ message: "Erreur modification projet" });
     }
 };
-
 
 export const deleteProject = async (req: Request, res: Response) => {
     try {
@@ -128,7 +125,6 @@ export const deleteProject = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Erreur lors de la suppression du projet." });
     }
 };
-
 
 export const getNextGroupName = async (req: Request, res: Response) => {
     try {
@@ -151,11 +147,12 @@ export const getNextGroupName = async (req: Request, res: Response) => {
         }
 
         const numbers = existingRepos
-            .map((repo) => {
+            .map((repo: any) => {
                 const m = repo.name.match(/^Groupe(\d+)$/i);
                 return m ? parseInt(m[1], 10) : null;
             })
-            .filter((n) => n !== null);
+            // ✅ Filtrage strict encore ici
+            .filter((n: number | null): n is number => n !== null);
 
         const next = numbers.length ? Math.max(...numbers) + 1 : 1;
 
