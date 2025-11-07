@@ -9,6 +9,7 @@ import PrivateRoute from "./components/PrivateRoute";
 import ErrorPage from "./pages/ErrorPage";
 
 export default function App() {
+    console.log("✅ API URL chargée:", import.meta.env.VITE_API_URL); //test pour vercel, car ca marche pas
     return (
         <BrowserRouter>
             <AuthProvider>
