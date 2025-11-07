@@ -24,18 +24,23 @@ app.use(
     })
 );
 
-const allowedOrigins = (process.env.CORS_ORIGINS || "").split(",").filter(Boolean);
+const allowedOrigins = (process.env.CORS_ORIGINS || "").split(",").map(o => o.trim());
 
 app.use(cors({
     origin: (origin, callback) => {
+        // autorise les requêtes sans origin (ex: curl)
         if (!origin) return callback(null, true);
 
-        if (allowedOrigins.includes(origin)) {
+        // ✅ accepte si l’origin correspond
+        if (allowedOrigins.some(o => origin.includes(o))) {
             return callback(null, true);
         }
+
+        console.error("❌ Blocqué par CORS ->", origin);
         return callback(new Error("Not allowed by CORS"));
     },
-    credentials: false,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
 app.use(json());
