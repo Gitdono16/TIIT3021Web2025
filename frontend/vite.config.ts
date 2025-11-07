@@ -3,12 +3,8 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-  server: {
-    port: 5173,
-    strictPort: true
-  },
   build: {
-    outDir: "dist"
+    outDir: "dist",
   },
-  base: "/"  // ✅ FIX CRITIQUE POUR VERCEL
+  base: "./",
 });
