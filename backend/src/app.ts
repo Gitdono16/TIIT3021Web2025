@@ -33,10 +33,11 @@ app.use(cors({
 
         // ✅ accepte si l’origin correspond
         if (allowedOrigins.some(o => origin.includes(o))) {
+            console.log("CORS  ok ->", origin);
             return callback(null, true);
         }
 
-        console.error("❌ Blocqué par CORS ->", origin);
+        console.error("bloque CORS ->", origin);
         return callback(new Error("Not allowed by CORS"));
     },
     methods: ["GET", "POST", "PUT", "DELETE"],
