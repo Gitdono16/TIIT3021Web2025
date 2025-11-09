@@ -3,18 +3,20 @@ import { Project } from "../models/Project";
 import crypto from "crypto";
 import { createGithubRepository, listOrganizationRepos } from "../services/githubService";
 
-// token URL pour l'utilisateur
 function generateUrlToken() {
     return crypto.randomBytes(16).toString("hex");
 }
 
-// ✅ Créer le projet
+// ✅ URL GitHub Pages pour les étudiants
+function getStudentLink(token: string) {
+    return `https://gitdono16.github.io/TIIT3021Web2025/#/join/${token}`;
+}
+
 export const createProject = async (req: Request, res: Response) => {
     try {
         const { name, organizationName, minStudents, maxStudents, color } = req.body;
         const professorId = (req as any).user.id;
 
-        // Vérifie l'organisation GitHub
         let existingRepos;
         try {
             existingRepos = await listOrganizationRepos(professorId, organizationName);
@@ -24,7 +26,6 @@ export const createProject = async (req: Request, res: Response) => {
             });
         }
 
-        // ✅ Correction TS: extraction des numéros corrects
         const groupNumbers: number[] = existingRepos
             .map((repo: any) => {
                 const match = repo.name.match(/^Groupe(\d+)$/i);
@@ -32,19 +33,17 @@ export const createProject = async (req: Request, res: Response) => {
             })
             .filter((n): n is number => typeof n === "number");
 
-        const nextGroupNumber =
-            groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 1;
-
+        const nextGroupNumber = groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 1;
         const groupName = `Groupe${nextGroupNumber.toString().padStart(2, "0")}`;
 
-        // ✅ Création dépôt GitHub
         const repoUrl = await createGithubRepository(
             professorId,
             organizationName,
             groupName
         );
 
-        // ✅ Enregistrement BDD
+        const token = generateUrlToken();
+
         const project = await Project.create({
             name,
             organizationName,
@@ -52,19 +51,25 @@ export const createProject = async (req: Request, res: Response) => {
             maxStudents,
             groupName,
             professorId,
-            urlToken: generateUrlToken(),
+            urlToken: token,
             repoUrl,
             color,
         });
 
-        res.status(201).json(project);
+        // ✅ Ajout du lien étudiant
+        const studentLink = getStudentLink(token);
+
+        res.status(201).json({
+            ...project.toObject(),
+            studentLink,
+        });
+
     } catch (error: any) {
         console.error("Erreur création projet :", error.message);
         res.status(400).json({ message: error.message });
     }
 };
 
-// ✅ Lire les projets d'un prof
 export const getMyProjects = async (req: Request, res: Response) => {
     try {
         const professorId = (req as any).user.id;
@@ -74,14 +79,15 @@ export const getMyProjects = async (req: Request, res: Response) => {
             projects.map((p: any) => ({
                 ...p.toObject(),
                 studentCount: p.students?.length || 0,
+                studentLink: getStudentLink(p.urlToken),
             }))
         );
+
     } catch {
         res.status(500).json({ message: "Impossible de récupérer les projets" });
     }
 };
 
-// ✅ Lire un projet spécifique
 export const getProjectById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -90,13 +96,16 @@ export const getProjectById = async (req: Request, res: Response) => {
         if (!project)
             return res.status(404).json({ message: "Projet introuvable" });
 
-        res.json(project);
+        res.json({
+            ...project.toObject(),
+            studentLink: getStudentLink(project.urlToken),
+        });
+
     } catch {
         res.status(500).json({ message: "Erreur lors de la récupération du projet." });
     }
 };
 
-// ✅ Modifier projet
 export const updateProject = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -111,19 +120,25 @@ export const updateProject = async (req: Request, res: Response) => {
         if (!project)
             return res.status(404).json({ message: "Projet introuvable" });
 
-        res.json({ message: "Projet mis à jour avec succès", project });
+        res.json({
+            message: "Projet mis à jour avec succès",
+            project: {
+                ...project.toObject(),
+                studentLink: getStudentLink(project.urlToken),
+            }
+        });
+
     } catch (err: any) {
         console.error("Erreur MAJ projet :", err.message);
         res.status(500).json({ message: "Erreur lors de la modification du projet" });
     }
 };
 
-// ✅ Delete projet
 export const deleteProject = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-
         const deleted = await Project.findByIdAndDelete(id);
+
         if (!deleted)
             return res.status(404).json({ message: "Projet introuvable!" });
 
@@ -134,7 +149,6 @@ export const deleteProject = async (req: Request, res: Response) => {
     }
 };
 
-// ✅ Prochain nom de groupe (corrigé TS aussi)
 export const getNextGroupName = async (req: Request, res: Response) => {
     try {
         const { organizationName } = req.query;
@@ -155,7 +169,6 @@ export const getNextGroupName = async (req: Request, res: Response) => {
             });
         }
 
-        // ✅ Correction TypeScript
         const numbers: number[] = existingRepos
             .map((repo: any) => {
                 const match = repo.name.match(/^Groupe(\d+)$/i);
@@ -166,6 +179,7 @@ export const getNextGroupName = async (req: Request, res: Response) => {
         const next = numbers.length ? Math.max(...numbers) + 1 : 1;
 
         res.json({ nextGroup: `Groupe${next.toString().padStart(2, "0")}` });
+
     } catch {
         res.status(500).json({
             message: "Erreur lors de la récupération du prochain groupe."
