@@ -8,6 +8,9 @@ function generateUrlToken() {
     return crypto.randomBytes(16).toString("hex");
 }
 
+function studentJoinUrl(token: string) {
+    return `https://gitdono16.github.io/TIIT3021Web2025/#/join/${token}`;
+}
 // Créer le projet
 export const createProject = async (req: Request, res: Response) => {
     try {
