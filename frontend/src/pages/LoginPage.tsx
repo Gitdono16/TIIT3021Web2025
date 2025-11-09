@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import Alert from "../components/Alert";
 
 export default function LoginPage() {
     const { login } = useAuth();
-    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
@@ -21,11 +20,13 @@ export default function LoginPage() {
             login(res.data.token);
             setSuccess("Connexion réussie !");
 
+            // ✅ IMPORTANT : Redirection compatible GitHub Pages
             setTimeout(() => {
-                navigate("/dashboard");
+                window.location.href = "#/dashboard";
             }, 800);
+
         } catch (err: any) {
-            setError("Email ou MDP incorrect.");
+            setError("Email ou mot de passe incorrect.");
         }
     };
 
