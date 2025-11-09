@@ -1,11 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { ghPages } from "vite-plugin-gh-pages";
+//import { ghPages } from "vite-plugin-gh-pages";
 
 export default defineConfig({
-  plugins: [react(), ghPages()],
+  plugins: [react()],
+  base: "/TIIT3021Web2025/",   // ✅ IMPORTANT POUR GITHUB PAGES
   build: {
-    outDir: "dist",
-  },
-  base: "/TIIT3021Web2025/"   // ✅ IMPORTANT
+    outDir: "dist"
+  }
 });
