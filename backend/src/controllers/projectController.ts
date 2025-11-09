@@ -7,7 +7,6 @@ function generateUrlToken() {
     return crypto.randomBytes(16).toString("hex");
 }
 
-// ✅ URL GitHub Pages pour les étudiants
 function getStudentLink(token: string) {
     return `https://gitdono16.github.io/TIIT3021Web2025/#/join/${token}`;
 }
