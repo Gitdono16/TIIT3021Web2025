@@ -44,6 +44,10 @@ export default function App() {
 
                     <Route path="/join/:token" element={<JoinProjectPage />} />
 
+                    {/* ✅ Manquait ! */}
+                    <Route path="/error" element={<ErrorPage />} />
+
+                    {/* Catch-all */}
                     <Route path="*" element={<ErrorPage />} />
                 </Routes>
             </AuthProvider>
