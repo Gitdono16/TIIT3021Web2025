@@ -11,12 +11,30 @@ type Project = {
     color?: string;
     urlToken: string;
     maxStudents: number;
-    // selon la réponse API, on peut recevoir l’un ou l’autre
     students?: string[];
     studentCount?: number;
-    // 🔹 lien prêt à l’emploi fourni par le backend
-    studentLink: string;
+    studentLink?: string; // peut être absent si backend pas à jour
 };
+
+/**
+ * Construit une URL GitHub Pages robuste pour /#/join/:token
+ * Fonctionne en prod (GitHub Pages) et en local.
+ */
+function buildStudentLinkFallback(token: string) {
+    const { origin, pathname } = window.location;
+
+    // Cas GitHub Pages: origin = https://user.github.io
+    // pathname = /RepoName/ ... On garde /user.github.io/RepoName
+    const parts = pathname.split("/").filter(Boolean); // ["RepoName", ...] ou []
+    let base = origin;
+
+    if (parts.length > 0) {
+        // Project site: https://user.github.io/RepoName
+        base += `/${parts[0]}`;
+    }
+
+    return `${base}/#/join/${token}`;
+}
 
 export default function ProjectsPage() {
     const { token, logout } = useAuth();
@@ -37,14 +55,17 @@ export default function ProjectsPage() {
         if (token) fetchProjects();
     }, [token]);
 
-    const copyJoinLink = (studentLink: string) => {
-        navigator.clipboard.writeText(studentLink);
+    const copyJoinLink = (p: Project) => {
+        const link = p.studentLink && p.studentLink.trim().length > 0
+            ? p.studentLink
+            : buildStudentLinkFallback(p.urlToken);
+
+        navigator.clipboard.writeText(link);
         alert("Lien étudiant copié !");
     };
 
     return (
         <div className="p-8 space-y-8">
-            {/* Header */}
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-semibold">Mes Projets</h1>
 
@@ -73,10 +94,16 @@ export default function ProjectsPage() {
                         const count =
                             project.studentCount ??
                             (Array.isArray(project.students) ? project.students.length : 0);
+
                         const ratio =
                             project.maxStudents > 0
                                 ? Math.min(100, Math.round((count / project.maxStudents) * 100))
                                 : 0;
+
+                        const effectiveStudentLink =
+                            project.studentLink && project.studentLink.trim().length > 0
+                                ? project.studentLink
+                                : buildStudentLinkFallback(project.urlToken);
 
                         return (
                             <div
@@ -102,10 +129,7 @@ export default function ProjectsPage() {
                                 <div className="w-full bg-white/30 h-2 mt-1 rounded">
                                     <div
                                         className="h-2 rounded"
-                                        style={{
-                                            width: `${ratio}%`,
-                                            background: "white",
-                                        }}
+                                        style={{ width: `${ratio}%`, background: "white" }}
                                     />
                                 </div>
 
@@ -122,9 +146,9 @@ export default function ProjectsPage() {
                                         Ouvrir repo GitHub
                                     </button>
 
-                                    {/* 🔹 Utilise le lien renvoyé par l’API */}
+                                    {/* 🔹 utilise studentLink s’il existe, sinon fallback */}
                                     <button
-                                        onClick={() => copyJoinLink(project.studentLink)}
+                                        onClick={() => copyJoinLink(project)}
                                         className="px-3 py-1 text-sm bg-white/20 hover:bg-white/30 rounded"
                                     >
                                         Copier lien étudiant
@@ -160,7 +184,7 @@ export default function ProjectsPage() {
 
                                 <div className="mt-3 text-xs bg-white/15 rounded p-2 break-all">
                                     <span className="font-medium">URL étudiant :</span>{" "}
-                                    {project.studentLink}
+                                    {effectiveStudentLink}
                                 </div>
                             </div>
                         );
