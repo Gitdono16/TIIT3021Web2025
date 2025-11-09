@@ -10,10 +10,11 @@ import ErrorPage from "./pages/ErrorPage";
 
 export default function App() {
     return (
-        <HashRouter basename="/TIIT3021Web2025">
+        <HashRouter>
             <AuthProvider>
                 <Routes>
                     <Route path="/" element={<LoginPage />} />
+
                     <Route
                         path="/dashboard"
                         element={
@@ -22,6 +23,7 @@ export default function App() {
                             </PrivateRoute>
                         }
                     />
+
                     <Route
                         path="/create-project"
                         element={
@@ -30,6 +32,7 @@ export default function App() {
                             </PrivateRoute>
                         }
                     />
+
                     <Route
                         path="/edit-project/:id"
                         element={
@@ -38,7 +41,13 @@ export default function App() {
                             </PrivateRoute>
                         }
                     />
+
                     <Route path="/join/:token" element={<JoinProjectPage />} />
+
+                    {/* ✅ Manquait ! */}
+                    <Route path="/error" element={<ErrorPage />} />
+
+                    {/* Catch-all */}
                     <Route path="*" element={<ErrorPage />} />
                 </Routes>
             </AuthProvider>
