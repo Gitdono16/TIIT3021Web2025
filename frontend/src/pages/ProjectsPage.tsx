@@ -8,43 +8,23 @@ type Project = {
     name: string;
     organizationName: string;
     groupName: string;
+    maxStudents: number;
+    students: string[];
     color?: string;
     urlToken: string;
-    maxStudents: number;
-    students?: string[];
-    studentCount?: number;
-    studentLink?: string; // peut être absent si backend pas à jour
+    studentLink?: string; // ✅ lien déjà prêt côté backend
 };
-
-/**
- * Construit une URL GitHub Pages robuste pour /#/join/:token
- * Fonctionne en prod (GitHub Pages) et en local.
- */
-function buildStudentLinkFallback(token: string) {
-    const { origin, pathname } = window.location;
-
-    // Cas GitHub Pages: origin = https://user.github.io
-    // pathname = /RepoName/ ... On garde /user.github.io/RepoName
-    const parts = pathname.split("/").filter(Boolean); // ["RepoName", ...] ou []
-    let base = origin;
-
-    if (parts.length > 0) {
-        // Project site: https://user.github.io/RepoName
-        base += `/${parts[0]}`;
-    }
-
-    return `${base}/#/join/${token}`;
-}
 
 export default function ProjectsPage() {
     const { token, logout } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const navigate = useNavigate();
 
+    // Charger les projets du professeur connecté
     useEffect(() => {
         const fetchProjects = async () => {
             try {
-                const res = await api.get("/projects", {
+                const res = await api.get<Project[]>("/projects", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 setProjects(res.data);
@@ -52,20 +32,25 @@ export default function ProjectsPage() {
                 console.error("Erreur récupération projets :", err);
             }
         };
+
         if (token) fetchProjects();
     }, [token]);
 
-    const copyJoinLink = (p: Project) => {
-        const link = p.studentLink && p.studentLink.trim().length > 0
-            ? p.studentLink
-            : buildStudentLinkFallback(p.urlToken);
+    // ✅ Copier le lien étudiant envoyé par le backend (ne pas reconstruire côté front)
+    const copyJoinLink = (studentLink?: string, urlToken?: string) => {
+        // sécurité/fallback si jamais l’API ne renvoie pas studentLink
+        const fallback =
+            `${window.location.origin}/TIIT3021Web2025/#/join/${urlToken ?? ""}`;
 
-        navigator.clipboard.writeText(link);
+        const linkToCopy = studentLink && studentLink.trim().length > 0 ? studentLink : fallback;
+
+        navigator.clipboard.writeText(linkToCopy);
         alert("Lien étudiant copié !");
     };
 
     return (
         <div className="p-8 space-y-8">
+            {/* Header */}
             <div className="flex justify-between items-center">
                 <h1 className="text-3xl font-semibold">Mes Projets</h1>
 
@@ -91,19 +76,9 @@ export default function ProjectsPage() {
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {projects.map((project) => {
-                        const count =
-                            project.studentCount ??
-                            (Array.isArray(project.students) ? project.students.length : 0);
-
-                        const ratio =
-                            project.maxStudents > 0
-                                ? Math.min(100, Math.round((count / project.maxStudents) * 100))
-                                : 0;
-
-                        const effectiveStudentLink =
-                            project.studentLink && project.studentLink.trim().length > 0
-                                ? project.studentLink
-                                : buildStudentLinkFallback(project.urlToken);
+                        const current = project.students?.length ?? 0;
+                        const max = project.maxStudents ?? 1;
+                        const percent = Math.min(100, Math.round((current / Math.max(max, 1)) * 100));
 
                         return (
                             <div
@@ -123,32 +98,29 @@ export default function ProjectsPage() {
                                 </p>
 
                                 <div className="mt-3 text-md font-semibold">
-                                    Étudiants : {count} / {project.maxStudents}
+                                    Étudiants : {current} / {max}
                                 </div>
 
                                 <div className="w-full bg-white/30 h-2 mt-1 rounded">
                                     <div
                                         className="h-2 rounded"
-                                        style={{ width: `${ratio}%`, background: "white" }}
+                                        style={{
+                                            width: `${percent}%`,
+                                            background: "white",
+                                        }}
                                     />
                                 </div>
 
+                                {/* Affichage (optionnel) du lien étudiant pour vérification visuelle */}
+                                {project.studentLink && (
+                                    <p className="text-xs mt-3 break-all opacity-90 bg-white/20 rounded px-2 py-1">
+                                        {project.studentLink}
+                                    </p>
+                                )}
+
                                 <div className="mt-4 flex flex-col gap-2">
                                     <button
-                                        onClick={() =>
-                                            window.open(
-                                                `https://github.com/${project.organizationName}/${project.groupName}`,
-                                                "_blank"
-                                            )
-                                        }
-                                        className="px-3 py-1 text-sm bg-white/20 hover:bg-white/30 rounded"
-                                    >
-                                        Ouvrir repo GitHub
-                                    </button>
-
-                                    {/* 🔹 utilise studentLink s’il existe, sinon fallback */}
-                                    <button
-                                        onClick={() => copyJoinLink(project)}
+                                        onClick={() => copyJoinLink(project.studentLink, project.urlToken)}
                                         className="px-3 py-1 text-sm bg-white/20 hover:bg-white/30 rounded"
                                     >
                                         Copier lien étudiant
@@ -168,9 +140,7 @@ export default function ProjectsPage() {
                                                     await api.delete(`/projects/${project._id}`, {
                                                         headers: { Authorization: `Bearer ${token}` },
                                                     });
-                                                    setProjects((prev) =>
-                                                        prev.filter((p) => p._id !== project._id)
-                                                    );
+                                                    setProjects((prev) => prev.filter((p) => p._id !== project._id));
                                                 } catch {
                                                     alert("Erreur lors de la suppression.");
                                                 }
@@ -180,11 +150,6 @@ export default function ProjectsPage() {
                                     >
                                         Supprimer
                                     </button>
-                                </div>
-
-                                <div className="mt-3 text-xs bg-white/15 rounded p-2 break-all">
-                                    <span className="font-medium">URL étudiant :</span>{" "}
-                                    {effectiveStudentLink}
                                 </div>
                             </div>
                         );
