@@ -8,16 +8,13 @@ function generateUrlToken() {
     return crypto.randomBytes(16).toString("hex");
 }
 
-function studentJoinUrl(token: string) {
-    return `https://gitdono16.github.io/TIIT3021Web2025/#/join/${token}`;
-}
-// Créer le projet
+// ✅ Créer le projet
 export const createProject = async (req: Request, res: Response) => {
     try {
         const { name, organizationName, minStudents, maxStudents, color } = req.body;
         const professorId = (req as any).user.id;
 
-        // organisation
+        // Vérifie l'organisation GitHub
         let existingRepos;
         try {
             existingRepos = await listOrganizationRepos(professorId, organizationName);
@@ -26,24 +23,28 @@ export const createProject = async (req: Request, res: Response) => {
                 message: `"${organizationName}" est introuvable sur GitHub.`
             });
         }
-        const groupNumbers = existingRepos
-            .map((repo: any) => {
-                const m = repo.name.match(/^Groupe(\d+)$/i);
-                return m ? parseInt(m[1], 10) : null;
-            })
-            .filter((n: number | null): n is number => n !== null);
 
-        const nextGroupNumber = groupNumbers.length ? Math.max(...groupNumbers) + 1 : 1;
+        // ✅ Correction TS: extraction des numéros corrects
+        const groupNumbers: number[] = existingRepos
+            .map((repo: any) => {
+                const match = repo.name.match(/^Groupe(\d+)$/i);
+                return match ? parseInt(match[1], 10) : undefined;
+            })
+            .filter((n): n is number => typeof n === "number");
+
+        const nextGroupNumber =
+            groupNumbers.length > 0 ? Math.max(...groupNumbers) + 1 : 1;
+
         const groupName = `Groupe${nextGroupNumber.toString().padStart(2, "0")}`;
 
-        // Création dépôt GitHub
+        // ✅ Création dépôt GitHub
         const repoUrl = await createGithubRepository(
             professorId,
             organizationName,
             groupName
         );
 
-        // Enregistre bien organizationName
+        // ✅ Enregistrement BDD
         const project = await Project.create({
             name,
             organizationName,
@@ -63,6 +64,7 @@ export const createProject = async (req: Request, res: Response) => {
     }
 };
 
+// ✅ Lire les projets d'un prof
 export const getMyProjects = async (req: Request, res: Response) => {
     try {
         const professorId = (req as any).user.id;
@@ -75,10 +77,11 @@ export const getMyProjects = async (req: Request, res: Response) => {
             }))
         );
     } catch {
-        res.status(500).json({ message: "Impossible de recup les projets" });
+        res.status(500).json({ message: "Impossible de récupérer les projets" });
     }
 };
 
+// ✅ Lire un projet spécifique
 export const getProjectById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -93,6 +96,7 @@ export const getProjectById = async (req: Request, res: Response) => {
     }
 };
 
+// ✅ Modifier projet
 export const updateProject = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -107,13 +111,14 @@ export const updateProject = async (req: Request, res: Response) => {
         if (!project)
             return res.status(404).json({ message: "Projet introuvable" });
 
-        res.json({ message: "Projet MAJ avec succès", project });
+        res.json({ message: "Projet mis à jour avec succès", project });
     } catch (err: any) {
         console.error("Erreur MAJ projet :", err.message);
-        res.status(500).json({ message: "Erreur modification projet" });
+        res.status(500).json({ message: "Erreur lors de la modification du projet" });
     }
 };
 
+// ✅ Delete projet
 export const deleteProject = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
@@ -129,6 +134,7 @@ export const deleteProject = async (req: Request, res: Response) => {
     }
 };
 
+// ✅ Prochain nom de groupe (corrigé TS aussi)
 export const getNextGroupName = async (req: Request, res: Response) => {
     try {
         const { organizationName } = req.query;
@@ -149,18 +155,20 @@ export const getNextGroupName = async (req: Request, res: Response) => {
             });
         }
 
-        const numbers = existingRepos
+        // ✅ Correction TypeScript
+        const numbers: number[] = existingRepos
             .map((repo: any) => {
-                const m = repo.name.match(/^Groupe(\d+)$/i);
-                return m ? parseInt(m[1], 10) : null;
+                const match = repo.name.match(/^Groupe(\d+)$/i);
+                return match ? parseInt(match[1], 10) : undefined;
             })
-            // ✅ Filtrage strict encore ici
-            .filter((n: number | null): n is number => n !== null);
+            .filter((n): n is number => typeof n === "number");
 
         const next = numbers.length ? Math.max(...numbers) + 1 : 1;
 
         res.json({ nextGroup: `Groupe${next.toString().padStart(2, "0")}` });
     } catch {
-        res.status(500).json({ message: "Erreur pour la récuperation du prochain groupe." });
+        res.status(500).json({
+            message: "Erreur lors de la récupération du prochain groupe."
+        });
     }
 };
