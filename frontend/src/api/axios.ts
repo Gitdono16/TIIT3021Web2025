@@ -1,19 +1,20 @@
 import axios from "axios";
 
-// ✅ utilise bien ton backend Render
+// ✅ Fallback si la variable n'est pas chargée
+const API_URL =
+    import.meta.env.VITE_API_URL ||
+    "https://tiit3021web2025.onrender.com/api";
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: API_URL,
 });
 
-// ✅ Gestion d'erreurs compatible avec GitHub Pages + HashRouter
+// ✅ Gestion erreurs + HashRouter
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // Pas de réponse du serveur → erreur serveur ou réseau
         if (!error.response) {
-            if (window.location.hash !== "#/error") {
-                window.location.href = "/#/error";
-            }
+            window.location.href = "/#/error";
             return Promise.reject(error);
         }
 
