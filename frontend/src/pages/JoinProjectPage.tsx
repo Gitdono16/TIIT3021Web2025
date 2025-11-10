@@ -30,7 +30,7 @@ export default function JoinProjectPage() {
         setChecking(true);
 
         try {
-            const res = await api.get(`/students/github/${github}`);
+            const res = await api.get(`/students/github/${github}?token=${token}`);
             setGithubData(res.data);
         } catch {
             setError("Utilisateur GitHub introuvable.");
