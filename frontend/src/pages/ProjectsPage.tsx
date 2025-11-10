@@ -24,14 +24,13 @@ export default function ProjectsPage() {
         if (token) fetchProjects();
     }, [token]);
 
-    // ✅ Corrigé pour GitHub Pages (HashRouter)
     const copyJoinLink = (project: any) => {
         // url avec hash obligatoire pour GitHub Pages
         const joinUrl = `${window.location.origin}/TIIT3021Web2025/#/join/${project.urlToken}`;
 
         console.log("🔗 Lien étudiant généré :", joinUrl);
         navigator.clipboard.writeText(joinUrl);
-        alert("✅ Lien copié:\n" + joinUrl);
+        alert("Lien copié!:\n" + joinUrl);
     };
 
     return (
@@ -57,7 +56,6 @@ export default function ProjectsPage() {
                 </div>
             </div>
 
-            {/* Liste des projets */}
             {projects.length === 0 ? (
                 <p className="text-gray-500">Aucun projet existant.</p>
             ) : (

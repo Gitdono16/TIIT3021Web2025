@@ -55,7 +55,6 @@ export const createProject = async (req: Request, res: Response) => {
             color,
         });
 
-        // ✅ Ajout du lien étudiant
         const studentLink = getStudentLink(token);
 
         res.status(201).json({

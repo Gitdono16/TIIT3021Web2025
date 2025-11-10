@@ -2,32 +2,22 @@ import { Request, Response } from "express";
 import { Project } from "../models/Project";
 import { Octokit } from "@octokit/rest";
 
-/**
- * ✅ Chaque professeur a son token GitHub privé
- * (stocké dans Render → Environment Variables)
- */
 const professorTokens: Record<string, string | undefined> = {
     "690e8c0dcc4e1424155a60d5": process.env.PROF1_GH_TOKEN, // Prof Donovan
     "67b57bc74afdf770a0830af6": process.env.PROF2_GH_TOKEN, // Prof Admin
 };
 
-/**
- * ✅ Trouve le bon token GitHub selon le professeur
- */
 function getProfessorGithubToken(professorId: string): string | null {
     return professorTokens[professorId] || null;
 }
 
-/**
- * ✅ Étudiant ouvre le lien → on renvoie les infos du projet
- */
 export const getProjectByToken = async (req: Request, res: Response) => {
     try {
         const { token } = req.params;
         const project = await Project.findOne({ urlToken: token });
 
         if (!project)
-            return res.status(404).json({ message: "Lien invalide ou expiré." });
+            return res.status(404).json({ message: "Mauvais lien" });
 
         res.json({
             name: project.name,
@@ -40,9 +30,6 @@ export const getProjectByToken = async (req: Request, res: Response) => {
     }
 };
 
-/**
- * ✅ Vérifie un pseudo GitHub AVEC LE BON TOKEN DU PROF
- */
 export const getGitHubUser = async (req: Request, res: Response) => {
     try {
         const { username } = req.params;
@@ -55,7 +42,6 @@ export const getGitHubUser = async (req: Request, res: Response) => {
         if (!project)
             return res.status(404).json({ message: "Projet introuvable" });
 
-        // ✅ On récupère le bon token GitHub du professeur
         const professorToken = getProfessorGithubToken(project.professorId);
 
         if (!professorToken)
@@ -80,9 +66,6 @@ export const getGitHubUser = async (req: Request, res: Response) => {
     }
 };
 
-/**
- * ✅ Inscription étudiant dans le projet
- */
 export const registerStudentByToken = async (req: Request, res: Response) => {
     try {
         const { github } = req.body;
@@ -99,7 +82,7 @@ export const registerStudentByToken = async (req: Request, res: Response) => {
         project.students.push(github);
         await project.save();
 
-        res.json({ message: "Inscription confirmée ✅" });
+        res.json({ message: "Inscription confirmée" });
 
     } catch {
         res.status(500).json({ message: "Erreur serveur" });
