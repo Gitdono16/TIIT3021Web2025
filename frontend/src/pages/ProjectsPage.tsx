@@ -8,7 +8,6 @@ export default function ProjectsPage() {
     const [projects, setProjects] = useState<any[]>([]);
     const navigate = useNavigate();
 
-    // Charger les projets du prof
     useEffect(() => {
         const fetchProjects = async () => {
             try {
@@ -25,10 +24,9 @@ export default function ProjectsPage() {
     }, [token]);
 
     const copyJoinLink = (project: any) => {
-        // url avec hash obligatoire pour GitHub Pages
         const joinUrl = `${window.location.origin}/TIIT3021Web2025/#/join/${project.urlToken}`;
 
-        console.log("🔗 Lien étudiant généré :", joinUrl);
+        console.log("Lien étudiant généré :", joinUrl);
         navigator.clipboard.writeText(joinUrl);
         alert("Lien copié!:\n" + joinUrl);
     };
