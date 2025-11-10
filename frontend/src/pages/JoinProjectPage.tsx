@@ -18,7 +18,7 @@ export default function JoinProjectPage() {
                 const res = await api.get(`/students/project/${token}`);
                 setProject(res.data);
             } catch {
-                setError(" expiré.");
+                setError("Lien invalide ou expiré.");
             }
         };
         fetchProject();
@@ -44,7 +44,7 @@ export default function JoinProjectPage() {
 
         try {
             await api.post(`/students/join/${token}`, { github });
-            setSuccess("Inscription réussie !");
+            setSuccess("Inscription réussie ✅");
         } catch (err: any) {
             setError(err.response?.data?.message || "Erreur lors de l'inscription!");
         }
@@ -59,13 +59,14 @@ export default function JoinProjectPage() {
                 <p className="text-center text-gray-600">Chargement...</p>
             ) : success ? (
                 <h2 className="text-center text-green-600 text-xl font-semibold">
-                    Vous êtes bien inscrit!
+                    Vous êtes bien inscrit 🎉
                 </h2>
             ) : (
                 <>
                     <h1 className="text-xl font-bold text-center mb-2">
                         Inscription au projet : {project.name}
                     </h1>
+
                     <p className="text-center text-gray-600 mb-4">
                         Organisation : {project.organization} <br/>
                         Groupe : {project.groupName}
