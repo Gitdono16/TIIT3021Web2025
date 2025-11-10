@@ -2,13 +2,25 @@ import { Request, Response } from "express";
 import { Project } from "../models/Project";
 import { Octokit } from "@octokit/rest";
 
-// ✅ Récupère automatiquement le bon token selon le professeur
+/**
+ * ✅ Chaque professeur a son token GitHub privé
+ * (stocké dans Render → Environment Variables)
+ */
+const professorTokens: Record<string, string | undefined> = {
+    "690e8c0dcc4e1424155a60d5": process.env.PROF1_GH_TOKEN, // Prof Donovan
+    "67b57bc74afdf770a0830af6": process.env.PROF2_GH_TOKEN, // Prof Admin
+};
+
+/**
+ * ✅ Trouve le bon token GitHub selon le professeur
+ */
 function getProfessorGithubToken(professorId: string): string | null {
-    const envVar = `PROF${professorId}_GH_TOKEN`;
-    return process.env[envVar] || null;
+    return professorTokens[professorId] || null;
 }
 
-// ✅ Étudiant ouvre son lien → récupérer le projet
+/**
+ * ✅ Étudiant ouvre le lien → on renvoie les infos du projet
+ */
 export const getProjectByToken = async (req: Request, res: Response) => {
     try {
         const { token } = req.params;
@@ -28,7 +40,9 @@ export const getProjectByToken = async (req: Request, res: Response) => {
     }
 };
 
-// ✅ Vérifie un pseudo GitHub AVEC TOKEN PROF
+/**
+ * ✅ Vérifie un pseudo GitHub AVEC LE BON TOKEN DU PROF
+ */
 export const getGitHubUser = async (req: Request, res: Response) => {
     try {
         const { username } = req.params;
@@ -36,36 +50,39 @@ export const getGitHubUser = async (req: Request, res: Response) => {
 
         if (!token) return res.status(400).json({ message: "Token manquant" });
 
-        // ✅ On cherche le projet lié au token
         const project = await Project.findOne({ urlToken: token });
-        if (!project) return res.status(404).json({ message: "Projet introuvable" });
 
-        // ✅ On convertit bien ObjectId → string
-        const professorId = project.professorId.toString();
-        const professorToken = getProfessorGithubToken(professorId);
+        if (!project)
+            return res.status(404).json({ message: "Projet introuvable" });
+
+        // ✅ On récupère le bon token GitHub du professeur
+        const professorToken = getProfessorGithubToken(project.professorId);
 
         if (!professorToken)
-            return res.status(500).json({ message: "Token GitHub professeur manquant" });
+            return res.status(500).json({ message: "Token GitHub du professeur introuvable" });
 
         const octokit = new Octokit({ auth: professorToken });
 
-        const { data } = await octokit.users.getByUsername({ username });
+        const response = await octokit.users.getByUsername({ username });
 
         res.json({
-            username: data.login,
-            avatar: data.avatar_url,
-            profile: data.html_url,
+            username: response.data.login,
+            avatar: response.data.avatar_url,
+            profile: response.data.html_url,
         });
 
     } catch (err: any) {
         if (err.status === 404)
-            return res.status(404).json({ message: "Utilisateur GitHub introuvable" });
+            return res.status(404).json({ message: "Utilisateur introuvable" });
 
-        return res.status(500).json({ message: "Erreur GitHub" });
+        console.error("GitHub API error :", err.message);
+        res.status(500).json({ message: "Erreur GitHub" });
     }
 };
 
-// ✅ Inscription étudiant
+/**
+ * ✅ Inscription étudiant dans le projet
+ */
 export const registerStudentByToken = async (req: Request, res: Response) => {
     try {
         const { github } = req.body;
