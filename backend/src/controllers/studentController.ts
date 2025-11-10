@@ -66,6 +66,7 @@ export const getGitHubUser = async (req: Request, res: Response) => {
     }
 };
 
+
 export const registerStudentByToken = async (req: Request, res: Response) => {
     try {
         const { github } = req.body;
@@ -79,12 +80,25 @@ export const registerStudentByToken = async (req: Request, res: Response) => {
         if (project.students.includes(github))
             return res.status(400).json({ message: "Déjà inscrit !" });
 
+        const professorToken = getProfessorGithubToken(project.professorId);
+        if (!professorToken)
+            return res.status(500).json({ message: "Token GitHub du professeur manquant" });
+
+        const octokit = new Octokit({ auth: professorToken });
+        await octokit.repos.addCollaborator({
+            owner: project.organizationName,
+            repo: project.groupName,
+            username: github,
+            permission: "pull",
+        });
+
         project.students.push(github);
         await project.save();
 
-        res.json({ message: "Inscription confirmée" });
+        res.json({ message: "Inscription confirmée, Invitation GitHub envoyée !" });
 
-    } catch {
-        res.status(500).json({ message: "Erreur serveur" });
+    } catch (err: any) {
+        console.error("Erreur ajout GitHub :", err.message);
+        return res.status(500).json({ message: "Erreur GitHub" });
     }
 };
