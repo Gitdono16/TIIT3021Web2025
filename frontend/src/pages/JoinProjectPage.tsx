@@ -32,8 +32,8 @@ export default function JoinProjectPage() {
         try {
             const res = await api.get(`/students/github/${github}?token=${token}`);
             setGithubData(res.data);
-        } catch {
-            setError("Utilisateur GitHub introuvable.");
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Utilisateur GitHub introuvable.");
         }
 
         setChecking(false);
@@ -43,10 +43,12 @@ export default function JoinProjectPage() {
         if (!githubData) return;
 
         try {
-            await api.post(`/students/join/${token}`, { github });
-            setSuccess("Inscription réussie ✅");
+            const res = await api.post(`/students/join/${token}`, { github });
+            setSuccess(res.data.message);
+            setError("");
         } catch (err: any) {
-            setError(err.response?.data?.message || "Erreur lors de l'inscription!");
+            setSuccess("");
+            setError(err.response?.data?.message || "Erreur lors de l'inscription !");
         }
     };
 
@@ -59,23 +61,22 @@ export default function JoinProjectPage() {
                 <p className="text-center text-gray-600">Chargement...</p>
             ) : success ? (
                 <h2 className="text-center text-green-600 text-xl font-semibold">
-                    Vous êtes bien inscrit 🎉
+                    Vous êtes bien inscrit !
                 </h2>
             ) : (
                 <>
                     <h1 className="text-xl font-bold text-center mb-2">
                         Inscription au projet : {project.name}
                     </h1>
-
                     <p className="text-center text-gray-600 mb-4">
-                        Organisation : {project.organization} <br/>
+                        Organisation : {project.organization} <br />
                         Groupe : {project.groupName}
                     </p>
 
                     <div className="flex gap-2">
                         <input
                             type="text"
-                            placeholder="Pseudo GitHub"
+                            placeholder="Pseudo Github"
                             className="border p-2 rounded w-full"
                             value={github}
                             onChange={(e) => setGithub(e.target.value)}
@@ -83,8 +84,8 @@ export default function JoinProjectPage() {
                         <button
                             type="button"
                             onClick={checkGithub}
-                            disabled={checking}
                             className="px-3 py-1 bg-gray-800 text-white rounded hover:bg-black"
+                            disabled={checking}
                         >
                             {checking ? "..." : "Vérifier"}
                         </button>
